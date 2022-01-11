@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import axios from 'axios';
 import Card from './card';
 import './deck.css';
@@ -9,13 +9,15 @@ const BASE_URL = 'http://deckofcardsapi.com/api/deck';
 function Deck(){
 
     const [deck, setDeck] = useState(null);
-    const [drawn, setDrawn] = useState([]); 
+    const [drawn, setDrawn] = useState([]);
+    const [autoDraw, setAutoDraw] = useState(false);
+    const timerRef = useRef(null); 
 
     useEffect(() => {
         async function getDeck(){
             try{
             let card = await axios.get(`${BASE_URL}/new/shuffle/`);
-            console.log('deck:', card.data);
+            //console.log('deck:', card.data);
             setDeck(card.data);
             }catch(err){
                 alert(err);
@@ -24,6 +26,7 @@ function Deck(){
         getDeck(); 
     },[]);
     
+    useEffect(() => {
         async function getCard(){
             //return previous deck
             if(deck === null){
@@ -51,14 +54,26 @@ function Deck(){
                     }
                 ]);
 
-
             }catch(err){
                 alert(err);
             }
         };
 
+    if(autoDraw){
+        timerRef.current = setInterval(async () => {
+            await getCard();
+        }, 1000);
+    };
+
+    return() =>  {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+    };
+}, [autoDraw, deck]);
+
     const handleDraw = () => {
-        getCard();
+        //getCard();
+        setAutoDraw(auto => !auto);
     };
         
     const cards = drawn.map(c =>(
@@ -67,7 +82,7 @@ function Deck(){
 
     return(
         <div>
-            <button onClick={handleDraw}>Draw a Card!</button>
+            <button onClick={handleDraw}>{autoDraw ? 'Stop ': 'Keep '}Drawing Cards!</button>
             <div className='Deck'>{cards}</div>
         </div>
     );
